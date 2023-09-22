@@ -1,7 +1,7 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 const pupProp = {
-    // headless: false,
+    headless: true,
     args: [
         `--no-sandbox`,
         `--disable-setuid-sandbox`,
@@ -12,9 +12,9 @@ const pupProp = {
         `--single-process`, // <- this one doesn't works in Windows
         `--disable-gpu`,
     ],
-    // executablePath: `/usr/bin/google-chrome-stable`,
+    executablePath: `/usr/bin/google-chrome-stable`,
     // executablePath: `C:/Program Files (x86)/Google/Chrome/Application/chrome.exe`,
-    executablePath: `C:/Program Files/Google/Chrome/Application/chrome.exe`,
+    // executablePath: `C:/Program Files/Google/Chrome/Application/chrome.exe`,
 };
 exports.browser = null;
 
@@ -52,9 +52,129 @@ exports.yt5s = async (url, format) => {
     const browser = await puppeteer.launch(pupProp);
     const page = await browser.newPage();
     try {
-        await page.goto("https://yt5s.io/");
+        await page.goto("https://yt5s.com/");
+        await page.waitForSelector("#s_input");
         await page.type("#s_input", url);
         await page.click("#search-form button");
+        await page.waitForSelector("#formatSelect");
+        result = await clickFormat(page, format || "mp4");
+        result.thumbnail = await page.$eval("div.thumbnail img", (el) =>
+            el.getAttribute("src")
+        );
+        result.title = await page.$eval(
+            "div.content h3",
+            (el) => el.textContent
+        );
+        result.channel = await page.$$eval(
+            "div.content p",
+            (el) => el[0].textContent
+        );
+        result.duration = await page.$eval(
+            "div.content p.mag0",
+            (el) => el.textContent
+        );
+        await page.click("#btn-action");
+        await page.waitForSelector("#cnext.form-control.mesg-convert");
+        await page.waitForSelector(
+            "a#asuccess.form-control.mesg-convert.success"
+        );
+        let href = "https://yt5s.io";
+        while (href.startsWith("https://yt5s.io")) {
+            href = await page.$eval("a#asuccess", (elm) => elm.href);
+        }
+        result.link = href;
+        await browser.close();
+    } catch (e) {
+        const isErrDiv = await page.evaluate(() => {
+            const options = Array.from(
+                document.querySelectorAll("div.error p")
+            );
+            return options.length != 0;
+        });
+        if (isErrDiv)
+            result.text = await page.$eval(
+                "div.error p",
+                (el) => el.textContent
+            );
+        else {
+            result.text = e.message || "Ada error!\n\n" + e;
+        }
+        await browser.close();
+    }
+    return Promise.resolve(result);
+};
+
+exports.tikvideo = async (url) => {
+    let result = {};
+    if (!url.includes("tiktok") && !url.includes("douyin")) {
+        result = {
+            text: "URL yang dimasukkan tidak valid. Masukkan URL TikTok yang valid!",
+        };
+        return Promise.resolve(result);
+    }
+    const browser = await puppeteer.launch(pupProp);
+    const page = await browser.newPage();
+    try {
+        await page.goto("https://tikvideo.app/id");
+        await page.type("#s_input", url);
+        await page.click("#search-form button");
+        await page.waitForSelector("div.dl-action");
+        result = await page.evaluate(() => {
+            const Ps = document.querySelectorAll("div.dl-action p");
+            let data = {};
+            Ps.forEach((p) => {
+                const a = p.children[0];
+                let item = a.textContent
+                    .trim()
+                    .replace(/[^a-zA-Z0-9\s]/g, "")
+                    .toLowerCase();
+                item = item.replace("unduh", "").trim();
+                item = item.replace(/ /g, "_");
+                data[item] = a.href;
+            });
+            return data;
+        });
+        result.thumbnail = await page.$eval("div.image-tik img", (el) =>
+            el.getAttribute("src")
+        );
+        result.desc = await page.$eval(
+            "div.content h3",
+            (el) => el.textContent
+        );
+        await browser.close();
+    } catch (e) {
+        const isErrDiv = await page.evaluate(() => {
+            const options = Array.from(
+                document.querySelectorAll("div.error p")
+            );
+            return options.length != 0;
+        });
+        if (isErrDiv)
+            result.text = await page.$eval(
+                "div.error p",
+                (el) => el.textContent
+            );
+        else {
+            result.text = e.message || "Ada error!\n\n" + e;
+        }
+        await browser.close();
+    }
+    return Promise.resolve(result);
+};
+
+exports.yt5sq = async (url, format) => {
+    let result = {};
+    if (!url.includes("youtube.com") && !url.includes("youtu.be")) {
+        result = {
+            text: "URL yang dimasukkan tidak valid. Masukkan URL YouTube yang valid!",
+        };
+        return Promise.resolve(result);
+    }
+    const browser = await puppeteer.launch(pupProp);
+    const page = await browser.newPage();
+    try {
+        await page.goto("https://yt5s.io?q=" + url);
+        await page.screenshot({ path: "./yt.png" });
         await page.waitForSelector("#formatSelect");
         result = await clickFormat(page, format || "mp4");
         result.thumbnail = await page.$eval("div.thumbnail img", (el) =>
@@ -347,5 +467,111 @@ exports.imglargerCartoonizer = async (imgData) => {
     }
     await browser.close();
     fs.unlinkSync(imgPath);
+    return Promise.resolve(result);
+};
+
+exports.y2mate = async (urls) => {
+    let result = {};
+    if (!urls.includes("youtube.com") && !urls.includes("youtu.be")) {
+        result = {
+            text: "URL yang dimasukkan tidak valid. Masukkan URL YouTube yang valid!",
+        };
+        return Promise.resolve(result);
+    }
+    const browser = await puppeteer.launch(pupProp);
+    const page = await browser.newPage();
+    await page.goto("https://www.y2mate.com/youtube/" + urls);
+
+    await page.waitForSelector(".table-bordered tbody");
+
+    const index = 2;
+    await page.evaluate((index) => {
+        const tr = document.querySelectorAll(".table-bordered tbody tr")[index];
+        const td3 = tr.querySelector("td:nth-child(3) > button");
+        td3.click();
+    }, index);
+
+    await page.waitForSelector("#process-result .btn-file[href]");
+    const href = await page.$eval(
+        "#process-result .btn-file[href]",
+        (link) => link.href
+    );
+
+    const title = await page.$eval(`.thumbnail .caption`, (el) => el.innerText);
+    const thumbnail = await page.$eval(`.thumbnail img`, (el) =>
+        el.getAttribute("src")
+    );
+
+    const td1 = await page.$eval(
+        `.table-bordered tbody tr:nth-child(${index + 1}) td:nth-child(1)`,
+        (el) => el.innerText
+    );
+    const td2 = await page.$eval(
+        `.table-bordered tbody tr:nth-child(${index + 1}) td:nth-child(2)`,
+        (el) => el.innerText
+    );
+
+    result = {
+        title: title,
+        thumbnail: thumbnail,
+        quality: td1,
+        size: td2,
+        link: href,
+    };
+
+    await browser.close();
+    return Promise.resolve(result);
+};
+
+exports.savefrom = async (url, format) => {
+    let result = {};
+    if (!url.includes("youtube.com") && !url.includes("youtu.be")) {
+        result = {
+            text: "URL yang dimasukkan tidak valid. Masukkan URL YouTube yang valid!",
+        };
+        return Promise.resolve(result);
+    }
+    const browser = await puppeteer.launch(pupProp);
+    const page = await browser.newPage();
+    try {
+        await page.goto("https://id.savefrom.net/");
+        await page.waitForSelector("#sf_url");
+        await page.type("#sf_url", url);
+        await page.click("#sf_submit");
+        await page.waitForSelector(".result-box");
+        // await page.screenshot({ path: "./yts.png" });
+        result.thumbnail = await page.$eval("a.clip img", (el) =>
+            el.getAttribute("src")
+        );
+        result.title = await page.$eval("div.title", (el) => el.textContent);
+        result.duration = await page.$eval(
+            "div.duration",
+            (el) => el.textContent
+        );
+        result.video = await page.$eval(".def-btn-box a", (el) => {
+            let res = {};
+            res.type = el.dataset.type;
+            res.quality = el.dataset.quality;
+            res.link = el.href;
+            return res;
+        });
+        await browser.close();
+    } catch (e) {
+        const isErrDiv = await page.evaluate(() => {
+            const options = Array.from(
+                document.querySelectorAll("div.error p")
+            );
+            return options.length != 0;
+        });
+        if (isErrDiv)
+            result.text = await page.$eval(
+                "div.error p",
+                (el) => el.textContent
+            );
+        else {
+            result.text = e.message || "Ada error!\n\n" + e;
+        }
+        await browser.close();
+    }
     return Promise.resolve(result);
 };

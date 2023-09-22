@@ -1,0 +1,2 @@
+### pscp root@23.95.48.230:~/downscrap-js/yt.png C:\Users\fixri\Documents\
+0h72Zij5YCNPou3Cv8

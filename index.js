@@ -7,6 +7,9 @@ const {
     snapsave,
     snaptwitter,
     imglargerCartoonizer,
+    y2mate,
+    yt5sq,
+    savefrom,
 } = require("./scrapper");
 const app = express();
 const PORT = process.env.PORT || 2121;
@@ -24,6 +27,21 @@ app.get("/", (req, res) => {
 });
 
 app.get("/yt", async (req, res) => {
+    const { url } = req.query;
+    res.json(await savefrom(url));
+});
+
+app.get("/yt4", async (req, res) => {
+    const { url, format } = req.query;
+    res.json(await yt5sq(url, format || "mp4"));
+});
+
+app.get("/yt3", async (req, res) => {
+    const { url, format } = req.query;
+    res.json(await y2mate(url || "mp4"));
+});
+
+app.get("/yt2", async (req, res) => {
     const { url, format } = req.query;
     res.json(await yt5s(url, format || "mp4"));
 });
