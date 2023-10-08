@@ -331,7 +331,11 @@ exports.snapsave = async (url) => {
 exports.snaptwitter = async (url) => {
     if (!url) return Promise.resolve({ text: "Missing query 'url' !" });
     let result = {};
-    if (!url.includes("twitt") && !url.includes("tweet")) {
+    if (
+        !url.includes("twitt") &&
+        !url.includes("tweet") &&
+        !url.includes("x.com")
+    ) {
         result = {
             text: "URL yang dimasukkan tidak valid. Masukkan URL Twitter yang valid!",
         };
