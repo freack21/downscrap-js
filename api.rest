@@ -1,2 +1,7 @@
-### pscp root@23.95.48.230:~/downscrap-js/yt.png C:\Users\fixri\Documents\
-0h72Zij5YCNPou3Cv8
+###
+POST http://localhost:2121/ytmp3?url=https://youtu.be/-JZB27sHTEw?feature=shared
+Content-Type: application/json
+
+{
+    "format": "mp4"
+}

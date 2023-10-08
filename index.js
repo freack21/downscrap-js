@@ -7,9 +7,6 @@ const {
     snapsave,
     snaptwitter,
     imglargerCartoonizer,
-    y2mate,
-    yt5sq,
-    savefrom,
 } = require("./scrapper");
 const app = express();
 const PORT = process.env.PORT || 2121;
@@ -22,58 +19,52 @@ app.use(
     })
 );
 
-app.get("/", (req, res) => {
-    res.send("running..");
-});
-
-app.get("/yt", async (req, res) => {
-    const { url } = req.query;
-    res.json(await savefrom(url));
-});
-
-app.get("/yt4", async (req, res) => {
-    const { url, format } = req.query;
-    res.json(await yt5sq(url, format || "mp4"));
-});
-
-app.get("/yt3", async (req, res) => {
-    const { url, format } = req.query;
-    res.json(await y2mate(url || "mp4"));
-});
-
-app.get("/yt2", async (req, res) => {
-    const { url, format } = req.query;
+const ytvid = async (req, res) => {
+    const url = req.query.url || req.body.url || req.headers.url;
+    const format = req.query.format || req.body.format || req.headers.format;
     res.json(await yt5s(url, format || "mp4"));
+};
+
+const ytaudio = async (req, res) => {
+    const url = req.query.url || req.body.url || req.headers.url;
+    const format = req.query.format || req.body.format || req.headers.format;
+    res.json(await yt5s(url, format || "mp3"));
+};
+
+app.all("/", (req, res) => {
+    res.json({ text: "Running.." });
 });
 
-app.get("/tt", async (req, res) => {
-    const { url } = req.query;
-    res.json(await tikvideo(url || "mp4"));
+app.all("/yt", ytvid);
+app.all("/ytvid", ytvid);
+app.all("/ytmp4", ytvid);
+
+app.all("/ytmp3", ytaudio);
+app.all("/ytaudio", ytaudio);
+
+app.all("/tt", async (req, res) => {
+    const url = req.query.url || req.body.url || req.headers.url;
+    res.json(await tikvideo(url));
 });
 
-app.get("/tt", async (req, res) => {
-    const { url } = req.query;
-    res.json(await tikvideo(url || "mp4"));
+app.all("/ig", async (req, res) => {
+    const url = req.query.url || req.body.url || req.headers.url;
+    res.json(await snapinsta(url));
 });
 
-app.get("/ig", async (req, res) => {
-    const { url } = req.query;
-    res.json(await snapinsta(url || "mp4"));
+app.all("/fb", async (req, res) => {
+    const url = req.query.url || req.body.url || req.headers.url;
+    res.json(await snapsave(url));
 });
 
-app.get("/fb", async (req, res) => {
-    const { url } = req.query;
-    res.json(await snapsave(url || "mp4"));
+app.all("/twt", async (req, res) => {
+    const url = req.query.url || req.body.url || req.headers.url;
+    res.json(await snaptwitter(url));
 });
 
-app.get("/twt", async (req, res) => {
-    const { url } = req.query;
-    res.json(await snaptwitter(url || "mp4"));
-});
-
-app.get("/cartoon", async (req, res) => {
+app.all("/cartoon", async (req, res) => {
     let { img } = req.query;
-    res.json(await imglargerCartoonizer(img || "mp4"));
+    res.json(await imglargerCartoonizer(img));
 });
 
 app.listen(PORT, () => {

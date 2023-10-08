@@ -1,22 +1,31 @@
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
 const fs = require("fs");
 const pupProp = {
-    headless: true,
+    headless: false,
+    // headless: true,
     args: [
-        `--no-sandbox`,
-        `--disable-setuid-sandbox`,
-        `--disable-dev-shm-usage`,
-        `--disable-accelerated-2d-canvas`,
-        `--no-first-run`,
-        `--no-zygote`,
-        `--single-process`, // <- this one doesn't works in Windows
-        `--disable-gpu`,
+        // `--no-sandbox`,
+        // `--disable-setuid-sandbox`,
+        // `--disable-dev-shm-usage`,
+        // `--disable-accelerated-2d-canvas`,
+        // `--no-first-run`,
+        // `--no-zygote`,
+        // `--single-process`, // <- this one doesn't works in Windows
+        // `--disable-gpu`,
     ],
-    executablePath: `/usr/bin/google-chrome-stable`,
+    // executablePath: `/usr/bin/google-chrome-stable`,
     // executablePath: `C:/Program Files (x86)/Google/Chrome/Application/chrome.exe`,
-    // executablePath: `C:/Program Files/Google/Chrome/Application/chrome.exe`,
+    executablePath: `C:/Program Files/Google/Chrome/Application/chrome.exe`,
 };
 exports.browser = null;
+
+const sleep = (msg, ms) => {
+    if (msg) console.log(msg);
+    if (!ms) return Promise.resolve(0);
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+};
 
 async function clickFormat(page, format) {
     return await page.evaluate(async (format) => {
@@ -42,6 +51,7 @@ async function clickFormat(page, format) {
 }
 
 exports.yt5s = async (url, format) => {
+    if (!url) return Promise.resolve({ text: "Missing query 'url' !" });
     let result = {};
     if (!url.includes("youtube.com") && !url.includes("youtu.be")) {
         result = {
@@ -78,8 +88,9 @@ exports.yt5s = async (url, format) => {
         await page.waitForSelector(
             "a#asuccess.form-control.mesg-convert.success"
         );
-        let href = "https://yt5s.io";
-        while (href.startsWith("https://yt5s.io")) {
+        let href = "https://yt5s.com";
+        while (href.startsWith("https://yt5s.com")) {
+            await sleep("", 2000);
             href = await page.$eval("a#asuccess", (elm) => elm.href);
         }
         result.link = href;
@@ -105,6 +116,7 @@ exports.yt5s = async (url, format) => {
 };
 
 exports.tikvideo = async (url) => {
+    if (!url) return Promise.resolve({ text: "Missing query 'url' !" });
     let result = {};
     if (!url.includes("tiktok") && !url.includes("douyin")) {
         result = {
@@ -162,68 +174,8 @@ exports.tikvideo = async (url) => {
     return Promise.resolve(result);
 };
 
-exports.yt5sq = async (url, format) => {
-    let result = {};
-    if (!url.includes("youtube.com") && !url.includes("youtu.be")) {
-        result = {
-            text: "URL yang dimasukkan tidak valid. Masukkan URL YouTube yang valid!",
-        };
-        return Promise.resolve(result);
-    }
-    const browser = await puppeteer.launch(pupProp);
-    const page = await browser.newPage();
-    try {
-        await page.goto("https://yt5s.io?q=" + url);
-        await page.screenshot({ path: "./yt.png" });
-        await page.waitForSelector("#formatSelect");
-        result = await clickFormat(page, format || "mp4");
-        result.thumbnail = await page.$eval("div.thumbnail img", (el) =>
-            el.getAttribute("src")
-        );
-        result.title = await page.$eval(
-            "div.content h3",
-            (el) => el.textContent
-        );
-        result.channel = await page.$$eval(
-            "div.content p",
-            (el) => el[0].textContent
-        );
-        result.duration = await page.$eval(
-            "div.content p.mag0",
-            (el) => el.textContent
-        );
-        await page.click("#btn-action");
-        await page.waitForSelector("#cnext.form-control.mesg-convert");
-        await page.waitForSelector(
-            "a#asuccess.form-control.mesg-convert.success"
-        );
-        let href = "https://yt5s.io";
-        while (href.startsWith("https://yt5s.io")) {
-            href = await page.$eval("a#asuccess", (elm) => elm.href);
-        }
-        result.link = href;
-        await browser.close();
-    } catch (e) {
-        const isErrDiv = await page.evaluate(() => {
-            const options = Array.from(
-                document.querySelectorAll("div.error p")
-            );
-            return options.length != 0;
-        });
-        if (isErrDiv)
-            result.text = await page.$eval(
-                "div.error p",
-                (el) => el.textContent
-            );
-        else {
-            result.text = e.message || "Ada error!\n\n" + e;
-        }
-        await browser.close();
-    }
-    return Promise.resolve(result);
-};
-
 exports.tikvideo = async (url) => {
+    if (!url) return Promise.resolve({ text: "Missing query 'url' !" });
     let result = {};
     if (!url.includes("tiktok") && !url.includes("douyin")) {
         result = {
@@ -238,6 +190,7 @@ exports.tikvideo = async (url) => {
         await page.type("#s_input", url);
         await page.click("#search-form button");
         await page.waitForSelector("div.dl-action");
+        await sleep("", 1000);
         result = await page.evaluate(() => {
             const Ps = document.querySelectorAll("div.dl-action p");
             let data = {};
@@ -282,6 +235,7 @@ exports.tikvideo = async (url) => {
 };
 
 exports.snapinsta = async (url) => {
+    if (!url) return Promise.resolve({ text: "Missing query 'url' !" });
     let result = {};
     if (!url.includes("instagram")) {
         result = {
@@ -296,6 +250,7 @@ exports.snapinsta = async (url) => {
         await page.type("#url", url);
         await page.click("button#send");
         await page.waitForSelector("div.download-items__btn");
+        await sleep("", 1000);
         result = await page.evaluate(() => {
             const divs = document.querySelectorAll("div.download-items__btn");
             let links = [];
@@ -325,6 +280,7 @@ exports.snapinsta = async (url) => {
 };
 
 exports.snapsave = async (url) => {
+    if (!url) return Promise.resolve({ text: "Missing query 'url' !" });
     let result = {};
     if (!url.includes("facebook") && !url.includes("fb.")) {
         result = {
@@ -339,6 +295,7 @@ exports.snapsave = async (url) => {
         await page.type("#url", url);
         await page.click("button#send");
         await page.waitForSelector("table.table.is-fullwidth");
+        await sleep("", 1000);
         result = await page.evaluate(() => {
             const tables = document.querySelector("table.table.is-fullwidth");
             let links = [];
@@ -372,6 +329,7 @@ exports.snapsave = async (url) => {
 };
 
 exports.snaptwitter = async (url) => {
+    if (!url) return Promise.resolve({ text: "Missing query 'url' !" });
     let result = {};
     if (!url.includes("twitt") && !url.includes("tweet")) {
         result = {
@@ -387,6 +345,7 @@ exports.snaptwitter = async (url) => {
         await page.type("#url", url);
         await page.click("button#send");
         await page.waitForSelector("div.abuttons a");
+        await sleep("", 1000);
         result.link = await page.$eval(
             "div.abuttons a",
             (el, base) => base + el.getAttribute("href"),
@@ -411,6 +370,7 @@ exports.snaptwitter = async (url) => {
 };
 
 exports.imglargerCartoonizer = async (imgData) => {
+    if (!url) return Promise.resolve({ text: "Missing query 'url' !" });
     let result = {};
     if (!imgData) {
         result = {
@@ -471,6 +431,7 @@ exports.imglargerCartoonizer = async (imgData) => {
 };
 
 exports.y2mate = async (urls) => {
+    if (!url) return Promise.resolve({ text: "Missing query 'url' !" });
     let result = {};
     if (!urls.includes("youtube.com") && !urls.includes("youtu.be")) {
         result = {
@@ -524,6 +485,7 @@ exports.y2mate = async (urls) => {
 };
 
 exports.savefrom = async (url, format) => {
+    if (!url) return Promise.resolve({ text: "Missing query 'url' !" });
     let result = {};
     if (!url.includes("youtube.com") && !url.includes("youtu.be")) {
         result = {
