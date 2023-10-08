@@ -1,8 +1,8 @@
 const puppeteer = require("puppeteer-core");
 const fs = require("fs");
 const pupProp = {
-    headless: false,
-    // headless: true,
+    // headless: false,
+    headless: true,
     args: [
         // `--no-sandbox`,
         // `--disable-setuid-sandbox`,
@@ -13,9 +13,9 @@ const pupProp = {
         // `--single-process`, // <- this one doesn't works in Windows
         // `--disable-gpu`,
     ],
-    // executablePath: `/usr/bin/google-chrome-stable`,
+    executablePath: `/usr/bin/google-chrome-stable`,
     // executablePath: `C:/Program Files (x86)/Google/Chrome/Application/chrome.exe`,
-    executablePath: `C:/Program Files/Google/Chrome/Application/chrome.exe`,
+    // executablePath: `C:/Program Files/Google/Chrome/Application/chrome.exe`,
 };
 exports.browser = null;
 
